@@ -257,7 +257,11 @@ const SCHEDULE = {
     { icon: '🏃', name: 'Exercise' },
     { icon: '🤖', name: 'Learning AI' },
   ],
-  0: [], // Sunday — rest day
+  0: [ // Sunday = Saturday
+    { icon: '📖', name: 'Reading on the balcony' },
+    { icon: '🏃', name: 'Exercise' },
+    { icon: '🤖', name: 'Learning AI' },
+  ],
 };
 
 const DOW = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -355,7 +359,7 @@ function renderDay(dateObj) {
   const acts = activitiesFor(dateObj);
   const el = document.getElementById('view-day');
   if (!acts.length) {
-    el.innerHTML = `<div class="rest-day"><div class="rest-icon">☀️</div>Rest day.<br>Nothing scheduled today.<br><span style="font-size:13px;color:var(--text3)">Enjoy your Sunday.</span></div>`;
+    el.innerHTML = `<div class="rest-day"><div class="rest-icon">☀️</div>Rest day.<br>Nothing scheduled today.</div>`;
     return;
   }
   const ds = dateStr(dateObj);
