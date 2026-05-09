@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0f0f0f" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Habits" />
+<title>21 Day Habits</title>
+<link rel="manifest" href="manifest.json" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0f0f0f;
+    --bg2: #1a1a1a;
+    --bg3: #242424;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --text: #f0ede8;
+    --text2: rgba(240,237,232,0.5);
+    --text3: rgba(240,237,232,0.28);
+    --accent: #e8d5a3;
+    --accent-dim: rgba(232,213,163,0.12);
+    --success: #6fcf97;
+    --success-dim: rgba(111,207,151,0.12);
+    --danger: #eb5757;
+    --safe: env(safe-area-inset-bottom, 0px);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; overscroll-behavior: none; }
+
+  /* layout */
+  #app { display: flex; flex-direction: column; min-height: 100%; max-width: 480px; margin: 0 auto; }
+
+  /* header */
+  header {
+    padding: calc(env(safe-area-inset-top, 0px) + 20px) 20px 0;
+    display: flex; align-items: flex-start; justify-content: space-between;
+  }
+  .header-left {}
+  .app-title { font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 500; color: var(--text3); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 4px; }
+  .day-label { font-size: 26px; font-weight: 300; color: var(--text); line-height: 1.1; }
+  .day-label span { font-weight: 500; }
+  .today-date { font-size: 13px; color: var(--text2); margin-top: 4px; }
+  .settings-btn { width: 36px; height: 36px; border-radius: 50%; border: 0.5px solid var(--border2); background: var(--bg2); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text2); font-size: 17px; margin-top: 4px; }
+  .settings-btn:active { background: var(--bg3); }
+
+  /* stats */
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 20px 20px 0; }
+  .stat-box { background: var(--bg2); border-radius: 12px; padding: 12px; }
+  .stat-n { font-family: 'DM Mono', monospace; font-size: 20px; font-weight: 500; color: var(--text); }
+  .stat-n.accent { color: var(--accent); }
+  .stat-l { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+  /* big progress ring */
+  .ring-wrap { display: flex; justify-content: center; padding: 24px 20px 8px; }
+  .ring-container { position: relative; width: 96px; height: 96px; }
+  .ring-container svg { transform: rotate(-90deg); }
+  .ring-bg { fill: none; stroke: var(--bg3); stroke-width: 6; }
+  .ring-fill { fill: none; stroke: var(--accent); stroke-width: 6; stroke-linecap: round; transition: stroke-dashoffset 0.6s ease; }
+  .ring-text { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .ring-pct { font-family: 'DM Mono', monospace; font-size: 20px; font-weight: 500; color: var(--text); }
+  .ring-sub { font-size: 10px; color: var(--text3); margin-top: 1px; }
+
+  /* section */
+  .section-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px 8px; }
+  .section-title { font-size: 11px; font-weight: 500; color: var(--text3); letter-spacing: 0.1em; text-transform: uppercase; font-family: 'DM Mono', monospace; }
+
+  /* activity cards */
+  .cards { padding: 0 20px; display: flex; flex-direction: column; gap: 10px; }
+  .card {
+    background: var(--bg2);
+    border: 0.5px solid var(--border);
+    border-radius: 16px;
+    padding: 14px 16px;
+    transition: border-color 0.2s, background 0.2s;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .card.checked { border-color: var(--border2); background: var(--bg3); }
+  .card:active { opacity: 0.85; }
+  .card-top { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .card-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: var(--bg3); display: flex; align-items: center; justify-content: center;
+    font-size: 17px; color: var(--text2); flex-shrink: 0; transition: background 0.2s;
+  }
+  .card.checked .card-icon { background: var(--accent-dim); color: var(--accent); }
+  .card-name { flex: 1; font-size: 15px; font-weight: 400; color: var(--text); transition: color 0.2s; }
+  .card.checked .card-name { color: var(--text2); text-decoration: line-through; text-decoration-color: var(--text3); }
+  .check-circle {
+    width: 24px; height: 24px; border-radius: 50%;
+    border: 1.5px solid var(--border2); background: transparent;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: all 0.2s; font-size: 13px;
+  }
+  .card.checked .check-circle { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+
+  /* progress inside card */
+  .card-progress {}
+  .prog-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .prog-days { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text3); }
+  .streak { display: flex; align-items: center; gap: 3px; font-size: 11px; color: var(--text3); }
+  .streak.on { color: var(--accent); }
+  .prog-track { height: 3px; background: var(--bg); border-radius: 2px; overflow: hidden; margin-bottom: 8px; }
+  .prog-fill { height: 3px; border-radius: 2px; background: var(--accent); transition: width 0.5s ease; }
+  .card.checked .prog-fill { background: var(--success); }
+  .dots { display: flex; gap: 3px; flex-wrap: nowrap; }
+  .d {
+    width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0;
+    transition: background 0.2s;
+  }
+  .d.past-done { background: var(--accent); }
+  .d.past-miss { background: var(--bg3); border: 0.5px solid var(--border2); }
+  .d.today-done { background: var(--success); }
+  .d.today-open { background: transparent; border: 1.5px solid var(--accent); }
+  .d.future { background: transparent; border: 0.5px solid var(--border); opacity: 0.4; }
+
+  /* bottom spacer + add bar */
+  .bottom-area {
+    margin-top: auto;
+    padding: 20px 20px calc(var(--safe) + 20px);
+  }
+  .add-row { display: flex; gap: 8px; }
+  .add-input {
+    flex: 1; background: var(--bg2); border: 0.5px solid var(--border2);
+    border-radius: 12px; padding: 0 14px; height: 44px; font-family: 'DM Sans', sans-serif;
+    font-size: 15px; color: var(--text); outline: none;
+  }
+  .add-input::placeholder { color: var(--text3); }
+  .add-input:focus { border-color: rgba(232,213,163,0.4); }
+  .add-btn {
+    width: 44px; height: 44px; border-radius: 12px; background: var(--accent);
+    border: none; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    font-size: 22px; color: var(--bg); font-weight: 300; flex-shrink: 0; transition: opacity 0.15s;
+  }
+  .add-btn:active { opacity: 0.7; }
+
+  /* settings sheet */
+  .sheet-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+    display: none; z-index: 100; align-items: flex-end;
+  }
+  .sheet-backdrop.open { display: flex; }
+  .sheet {
+    background: var(--bg2); border-radius: 20px 20px 0 0;
+    padding: 0 0 calc(var(--safe) + 20px);
+    width: 100%; max-height: 85vh; overflow-y: auto;
+  }
+  .sheet-handle { width: 36px; height: 4px; background: var(--border2); border-radius: 2px; margin: 12px auto 0; }
+  .sheet-title { font-size: 13px; font-weight: 500; color: var(--text2); padding: 16px 20px 8px; font-family: 'DM Mono', monospace; text-transform: uppercase; letter-spacing: 0.1em; }
+  .sheet-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 20px; border-top: 0.5px solid var(--border);
+  }
+  .sheet-item-icon { font-size: 17px; color: var(--text2); width: 20px; text-align: center; }
+  .sheet-item-name { flex: 1; font-size: 15px; color: var(--text); }
+  .del-btn { font-size: 20px; color: var(--text3); cursor: pointer; padding: 4px; }
+  .del-btn:active { color: var(--danger); }
+  .sheet-footer { padding: 16px 20px 0; border-top: 0.5px solid var(--border); margin-top: 8px; }
+  .reset-btn {
+    width: 100%; padding: 12px; background: transparent; border: 0.5px solid var(--border2);
+    border-radius: 12px; color: var(--text2); font-family: 'DM Sans', sans-serif;
+    font-size: 14px; cursor: pointer;
+  }
+  .reset-btn:active { background: var(--bg3); }
+
+  /* toast */
+  .toast {
+    position: fixed; bottom: calc(var(--safe) + 80px); left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--bg3); border: 0.5px solid var(--border2); border-radius: 20px;
+    padding: 8px 16px; font-size: 13px; color: var(--text2);
+    opacity: 0; transition: all 0.3s; pointer-events: none; white-space: nowrap; z-index: 200;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* empty state */
+  .empty { text-align: center; padding: 32px 20px; color: var(--text3); font-size: 14px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="header-left">
+      <div class="app-title">21-day tracker</div>
+      <div class="day-label" id="day-label">Day <span id="day-num">1</span></div>
+      <div class="today-date" id="today-date"></div>
+    </div>
+    <button class="settings-btn" id="settings-btn" aria-label="Manage activities">&#9881;</button>
+  </header>
+
+  <div class="ring-wrap">
+    <div class="ring-container">
+      <svg viewBox="0 0 96 96" width="96" height="96">
+        <circle class="ring-bg" cx="48" cy="48" r="42" />
+        <circle class="ring-fill" id="ring-fill" cx="48" cy="48" r="42" stroke-dasharray="263.9" stroke-dashoffset="263.9" />
+      </svg>
+      <div class="ring-text">
+        <div class="ring-pct" id="ring-pct">0%</div>
+        <div class="ring-sub">today</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stats" id="stats-row"></div>
+
+  <div class="section-head">
+    <div class="section-title">Activities</div>
+  </div>
+
+  <div class="cards" id="cards"></div>
+
+  <div class="bottom-area">
+    <div class="add-row">
+      <input class="add-input" id="add-input" type="text" placeholder="Add an activity…" maxlength="50" enterkeyhint="done" />
+      <button class="add-btn" id="add-btn" aria-label="Add activity">+</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings sheet -->
+<div class="sheet-backdrop" id="sheet-backdrop">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Manage activities</div>
+    <div id="sheet-list"></div>
+    <div class="sheet-footer">
+      <button class="reset-btn" id="reset-btn">Reset 21-day challenge</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const KEY = 'habit21_pwa_v1';
+const DAY = 86400000;
+
+const ICONS = {
+  'Exercise / workout': '🏃',
+  'Study / learn something': '📖',
+  'No social media': '📵',
+  'Meditate': '🧘',
+  'Drink 2L water': '💧',
+  'Journal': '✏️',
+  'Sleep before midnight': '🌙',
+  'Read for 30 min': '📚',
+};
+function iconFor(a) { return ICONS[a] || '✦'; }
+
+function todayStr() { return new Date().toISOString().slice(0,10); }
+function offsetToDate(n, start) {
+  return new Date(new Date(start+'T00:00:00').getTime()+n*DAY).toISOString().slice(0,10);
+}
+function dayOffset(d, start) {
+  return Math.round((new Date(d+'T00:00:00')-new Date(start+'T00:00:00'))/DAY);
+}
+
+function load() {
+  try { const r = localStorage.getItem(KEY); if (r) return JSON.parse(r); } catch(e) {}
+  return {
+    start: todayStr(),
+    activities: ['Exercise / workout','Study / learn something','No social media'],
+    log: {}
+  };
+}
+function save(s) { try { localStorage.setItem(KEY, JSON.stringify(s)); } catch(e) {} }
+
+let state = load();
+
+function streak(a) {
+  const today = todayStr();
+  const off = dayOffset(today, state.start);
+  let n = 0;
+  for (let i = Math.min(off,20); i >= 0; i--) {
+    const d = offsetToDate(i, state.start);
+    if (state.log[d] && state.log[d][a]) n++;
+    else break;
+  }
+  return n;
+}
+
+function totalDone(a) {
+  let n = 0;
+  for (let i = 0; i < 21; i++) {
+    const d = offsetToDate(i, state.start);
+    if (state.log[d] && state.log[d][a]) n++;
+  }
+  return n;
+}
+
+function render() {
+  const today = todayStr();
+  const off = Math.min(dayOffset(today, state.start), 20);
+  const currentDay = off + 1;
+
+  // header
+  document.getElementById('day-num').textContent = currentDay;
+  document.getElementById('today-date').textContent = new Date(today+'T00:00:00')
+    .toLocaleDateString('en-GB', { weekday:'long', month:'long', day:'numeric' });
+
+  // ring
+  const total = state.activities.length;
+  const doneToday = total ? state.activities.filter(a => state.log[today] && state.log[today][a]).length : 0;
+  const todayPct = total ? Math.round((doneToday/total)*100) : 0;
+  const circ = 2 * Math.PI * 42;
+  document.getElementById('ring-fill').setAttribute('stroke-dashoffset', circ - (circ * todayPct / 100));
+  document.getElementById('ring-pct').textContent = todayPct + '%';
+
+  // stats
+  let allDone = 0, allTotal = 0;
+  for (let i = 0; i <= off; i++) {
+    const d = offsetToDate(i, state.start);
+    state.activities.forEach(a => { allTotal++; if (state.log[d] && state.log[d][a]) allDone++; });
+  }
+  const overallPct = allTotal ? Math.round((allDone/allTotal)*100) : 0;
+  const daysLeft = Math.max(0, 20 - off);
+  document.getElementById('stats-row').innerHTML = `
+    <div class="stat-box"><div class="stat-n accent">${overallPct}%</div><div class="stat-l">overall</div></div>
+    <div class="stat-box"><div class="stat-n">${daysLeft}</div><div class="stat-l">days left</div></div>
+    <div class="stat-box"><div class="stat-n">${doneToday}/${total}</div><div class="stat-l">today</div></div>
+  `;
+
+  // cards
+  const container = document.getElementById('cards');
+  container.innerHTML = '';
+  if (!state.activities.length) {
+    container.innerHTML = '<div class="empty">No activities yet. Add one below.</div>';
+    return;
+  }
+  state.activities.forEach(a => {
+    const checked = !!(state.log[today] && state.log[today][a]);
+    const str = streak(a);
+    const done = totalDone(a);
+    const pct = Math.round((done/21)*100);
+
+    let dotsHtml = '';
+    for (let i = 0; i < 21; i++) {
+      const d = offsetToDate(i, state.start);
+      let cls;
+      if (i < currentDay - 1) cls = (state.log[d] && state.log[d][a]) ? 'past-done' : 'past-miss';
+      else if (i === currentDay - 1) cls = checked ? 'today-done' : 'today-open';
+      else cls = 'future';
+      dotsHtml += `<div class="d ${cls}" aria-hidden="true"></div>`;
+    }
+
+    const card = document.createElement('div');
+    card.className = 'card' + (checked ? ' checked' : '');
+    card.setAttribute('role', 'checkbox');
+    card.setAttribute('aria-checked', String(checked));
+    card.setAttribute('aria-label', a);
+    card.tabIndex = 0;
+    card.innerHTML = `
+      <div class="card-top">
+        <div class="card-icon">${iconFor(a)}</div>
+        <div class="card-name">${a}</div>
+        <div class="check-circle">${checked ? '✓' : ''}</div>
+      </div>
+      <div class="card-progress">
+        <div class="prog-meta">
+          <span class="prog-days">${done}/21</span>
+          <span class="streak ${str > 0 ? 'on' : ''}">${str > 0 ? '🔥 ' + str + ' day streak' : 'no streak'}</span>
+        </div>
+        <div class="prog-track"><div class="prog-fill" style="width:${pct}%"></div></div>
+        <div class="dots">${dotsHtml}</div>
+      </div>
+    `;
+
+    function doToggle() {
+      if (!state.log[today]) state.log[today] = {};
+      state.log[today][a] = !state.log[today][a];
+      save(state);
+      render();
+    }
+    card.addEventListener('click', doToggle);
+    card.addEventListener('keydown', e => { if (e.key===' '||e.key==='Enter') { e.preventDefault(); doToggle(); } });
+    container.appendChild(card);
+  });
+}
+
+// add activity
+document.getElementById('add-btn').addEventListener('click', addActivity);
+document.getElementById('add-input').addEventListener('keydown', e => { if (e.key==='Enter') { addActivity(); e.target.blur(); } });
+function addActivity() {
+  const inp = document.getElementById('add-input');
+  const val = inp.value.trim();
+  if (!val) return;
+  if (state.activities.includes(val)) { showToast('Already in your list'); inp.value=''; return; }
+  state.activities.push(val);
+  save(state);
+  inp.value = '';
+  render();
+  showToast('Activity added');
+}
+
+// settings sheet
+document.getElementById('settings-btn').addEventListener('click', () => {
+  renderSheet();
+  document.getElementById('sheet-backdrop').classList.add('open');
+});
+document.getElementById('sheet-backdrop').addEventListener('click', e => {
+  if (e.target === e.currentTarget) document.getElementById('sheet-backdrop').classList.remove('open');
+});
+function renderSheet() {
+  const list = document.getElementById('sheet-list');
+  list.innerHTML = '';
+  if (!state.activities.length) {
+    list.innerHTML = '<div style="padding:16px 20px; color: rgba(240,237,232,0.3); font-size:14px;">No activities yet.</div>';
+    return;
+  }
+  state.activities.forEach((a, i) => {
+    const row = document.createElement('div');
+    row.className = 'sheet-item';
+    row.innerHTML = `
+      <div class="sheet-item-icon">${iconFor(a)}</div>
+      <div class="sheet-item-name">${a}</div>
+      <div class="del-btn" role="button" aria-label="Remove ${a}" tabindex="0">×</div>
+    `;
+    row.querySelector('.del-btn').addEventListener('click', () => {
+      state.activities.splice(i, 1);
+      save(state);
+      renderSheet();
+      render();
+    });
+    list.appendChild(row);
+  });
+}
+
+document.getElementById('reset-btn').addEventListener('click', () => {
+  if (!confirm('Reset the 21-day challenge? All progress will be cleared.')) return;
+  state.start = todayStr();
+  state.log = {};
+  save(state);
+  document.getElementById('sheet-backdrop').classList.remove('open');
+  render();
+  showToast('Challenge reset. Day 1 starts now.');
+});
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// service worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
+}
+
+render();
+</script>
+</body>
+</html>
