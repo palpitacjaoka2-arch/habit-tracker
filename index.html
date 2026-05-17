@@ -246,7 +246,6 @@ body { min-height: 100%; background: var(--bg); color: var(--text); font-family:
 
 <script>
 const KEY = 'habits_v4';
-const DAY_MS = 86400000;
 
 /* ── SCHEDULE: 0=Sun,1=Mon,...,6=Sat ── */
 const SCHEDULE = {
@@ -308,10 +307,9 @@ function dateStr(d) {
   return `${y}-${m}-${day}`;
 }
 function parseDate(s) { const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d); }
-function todayDate() {
-  const n = new Date();
-  return new Date(n.getFullYear(), n.getMonth(), n.getDate());
-}
+function todayDate() { const n = new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate()); }
+function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate() + n); return r; }
+function diffDays(a, b) { return Math.round((a - b) / 86400000); }
 
 /* ── STATE ── */
 function load() {
@@ -352,7 +350,7 @@ function calcStreak() {
   const today = todayDate();
   let streak = 0;
   for (let i = 0; i < 365; i++) {
-    const d = new Date(today.getTime() - i * DAY_MS);
+    const d = addDays(today, -i);
     const acts = activitiesFor(d);
     if (!acts.length) continue; // skip rest days
     if (isComplete(d)) streak++;
@@ -432,12 +430,12 @@ function renderDay(dateObj) {
 /* ── WEEK VIEW ── */
 function renderWeek() {
   const today = todayDate();
-  const startOfWeek = new Date(today.getTime() + weekOffset * 7 * DAY_MS);
+  const startOfWeek = addDays(today, weekOffset * 7);
   const dow = startOfWeek.getDay();
-  const monday = new Date(startOfWeek.getTime() - ((dow===0?6:dow-1)*DAY_MS));
+  const monday = addDays(startOfWeek, -(dow === 0 ? 6 : dow - 1));
 
   const from = monday.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
-  const sun = new Date(monday.getTime()+6*DAY_MS);
+  const sun = addDays(monday, 6);
   const to = sun.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
 
   let html = `<div class="week-nav">
@@ -447,7 +445,7 @@ function renderWeek() {
   </div><div class="week-grid">`;
 
   for (let i = 0; i < 7; i++) {
-    const d = new Date(monday.getTime() + i * DAY_MS);
+    const d = addDays(monday, i);
     const isToday = dateStr(d) === dateStr(today);
     const isFuture = d > today;
     const comp = completionOf(d);
