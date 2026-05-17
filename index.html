@@ -228,17 +228,17 @@ body { min-height: 100%; background: var(--bg); color: var(--text); font-family:
       <div style="font-size:22px;color:var(--text3);cursor:pointer;padding:0 0 0 12px;" onclick="document.getElementById('backup-backdrop').classList.remove('open')">×</div>
     </div>
     <div class="backup-row" id="export-btn">
-      <div class="backup-icon">📤</div>
+      <div class="backup-icon">☁️</div>
       <div>
-        <div class="backup-text-title">Export backup</div>
-        <div class="backup-text-sub">Save your data as a JSON file</div>
+        <div class="backup-text-title">Save to Google Sheets</div>
+        <div class="backup-text-sub">Push your current data to the cloud</div>
       </div>
     </div>
     <div class="backup-row" id="import-btn">
-      <div class="backup-icon">📥</div>
+      <div class="backup-icon">🔄</div>
       <div>
-        <div class="backup-text-title">Import backup</div>
-        <div class="backup-text-sub">Restore from a previously saved file</div>
+        <div class="backup-text-title">Restore from Google Sheets</div>
+        <div class="backup-text-sub">Pull your data back from the cloud</div>
       </div>
     </div>
   </div>
@@ -312,12 +312,48 @@ function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate() + n); retu
 function diffDays(a, b) { return Math.round((a - b) / 86400000); }
 
 /* ── STATE ── */
-function load() {
+const GS_URL = 'https://script.google.com/macros/s/AKfycbyCP2_sI49cGZnVv7k7znW2o3keo6rUmzTQRXDXk9FVg2YVm5ms_vWU4RvI-hEagquZ8w/exec';
+
+function loadLocal() {
   try { const r = localStorage.getItem(KEY); if (r) return JSON.parse(r); } catch(e) {}
   return { log: {} };
 }
-function save(s) { try { localStorage.setItem(KEY, JSON.stringify(s)); } catch(e) {} }
-let state = load();
+function saveLocal(s) {
+  try { localStorage.setItem(KEY, JSON.stringify(s)); } catch(e) {}
+}
+
+async function syncFromSheets() {
+  try {
+    const res = await fetch(GS_URL);
+    const json = await res.json();
+    if (json.data) {
+      const remote = JSON.parse(json.data);
+      if (remote && remote.log) {
+        state = remote;
+        saveLocal(state);
+        render();
+        showToast('Synced from Google Sheets ✓');
+      }
+    }
+  } catch(e) {
+    showToast('Offline — using local data');
+  }
+}
+
+async function syncToSheets(s) {
+  saveLocal(s);
+  try {
+    await fetch(GS_URL, {
+      method: 'POST',
+      body: JSON.stringify({ data: JSON.stringify(s) }),
+    });
+  } catch(e) {
+    // silent fail — data is safe in localStorage
+  }
+}
+
+function save(s) { syncToSheets(s); }
+let state = loadLocal();
 
 function activitiesFor(dateObj) {
   return SCHEDULE[dateObj.getDay()] || [];
@@ -620,46 +656,24 @@ document.getElementById('backup-backdrop').addEventListener('click', e => {
   if (e.target === e.currentTarget) e.currentTarget.classList.remove('open');
 });
 
-document.getElementById('export-btn').addEventListener('click', () => {
-  const json = JSON.stringify(state, null, 2);
-  const blob = new Blob([json], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  const today = dateStr(todayDate());
-  a.href = url; a.download = `habits-backup-${today}.json`;
-  a.click(); URL.revokeObjectURL(url);
+document.getElementById('export-btn').addEventListener('click', async () => {
   document.getElementById('backup-backdrop').classList.remove('open');
-  showToast('Backup saved ✓');
+  showToast('Saving to Google Sheets…');
+  await syncToSheets(state);
+  showToast('Saved to Google Sheets ✓');
 });
 
-document.getElementById('import-btn').addEventListener('click', () => {
-  document.getElementById('import-file').click();
-});
-document.getElementById('import-file').addEventListener('change', e => {
-  const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = evt => {
-    try {
-      const parsed = JSON.parse(evt.target.result);
-      if (!parsed.log) throw new Error('Invalid format');
-      state = parsed;
-      save(state);
-      document.getElementById('backup-backdrop').classList.remove('open');
-      render();
-      showToast('Data restored ✓');
-    } catch(err) {
-      showToast('Invalid backup file');
-    }
-    e.target.value = '';
-  };
-  reader.readAsText(file);
+document.getElementById('import-btn').addEventListener('click', async () => {
+  document.getElementById('backup-backdrop').classList.remove('open');
+  showToast('Loading from Google Sheets…');
+  await syncFromSheets();
 });
 
 /* ── SERVICE WORKER ── */
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
 
 render();
+syncFromSheets(); // pull latest from Google Sheets on every load
 </script>
 </body>
 </html>
