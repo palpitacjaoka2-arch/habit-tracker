@@ -169,6 +169,12 @@ body { min-height: 100%; background: var(--bg); color: var(--text); font-family:
 /* ── TOAST ── */
 .toast { position: fixed; bottom: calc(var(--safe-bot) + 90px); left: 50%; transform: translateX(-50%) translateY(10px); background: var(--bg3); border: 0.5px solid var(--border2); border-radius: 20px; padding: 8px 16px; font-size: 13px; color: var(--text2); opacity: 0; transition: all 0.25s; pointer-events: none; white-space: nowrap; z-index: 200; }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.backup-sheet { background: var(--bg2); border-radius: 20px 20px 0 0; width: 100%; padding: 0 0 calc(var(--safe-bot) + 24px); }
+.backup-row { display: flex; align-items: center; gap: 14px; padding: 16px 20px; border-top: 0.5px solid var(--border); cursor: pointer; }
+.backup-row:active { background: var(--bg3); }
+.backup-icon { font-size: 20px; width: 28px; text-align: center; }
+.backup-text-title { font-size: 15px; color: var(--text); }
+.backup-text-sub { font-size: 12px; color: var(--text3); margin-top: 2px; }
 </style>
 </head>
 <body>
@@ -178,11 +184,13 @@ body { min-height: 100%; background: var(--bg); color: var(--text); font-family:
     <div class="header-top">
       <div class="day-name" id="day-name-el"></div>
       <div class="header-right">
+        <button class="settings-btn" id="backup-btn" aria-label="Backup / Restore data">💾</button>
         <div class="full-date" id="full-date-el"></div>
         <div class="streak-badge" id="streak-el" style="display:none"></div>
       </div>
     </div>
   </div>
+  <input type="file" id="import-file" accept=".json" style="display:none"/>
   <div class="tabs">
     <button class="tab active" id="tab-day" onclick="switchView('day')">Day</button>
     <button class="tab" id="tab-week" onclick="switchView('week')">Week</button>
@@ -210,6 +218,31 @@ body { min-height: 100%; background: var(--bg); color: var(--text); font-family:
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- Backup sheet -->
+<div class="sheet-backdrop" id="backup-backdrop">
+  <div class="backup-sheet">
+    <div class="sheet-handle"></div>
+    <div style="padding:16px 20px 8px; display:flex; justify-content:space-between; align-items:center;">
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;">Data & Backup</div>
+      <div style="font-size:22px;color:var(--text3);cursor:pointer;padding:0 0 0 12px;" onclick="document.getElementById('backup-backdrop').classList.remove('open')">×</div>
+    </div>
+    <div class="backup-row" id="export-btn">
+      <div class="backup-icon">📤</div>
+      <div>
+        <div class="backup-text-title">Export backup</div>
+        <div class="backup-text-sub">Save your data as a JSON file</div>
+      </div>
+    </div>
+    <div class="backup-row" id="import-btn">
+      <div class="backup-icon">📥</div>
+      <div>
+        <div class="backup-text-title">Import backup</div>
+        <div class="backup-text-sub">Restore from a previously saved file</div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script>
 const KEY = 'habits_v4';
@@ -269,7 +302,7 @@ const DOW_FULL = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','S
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
 function dateStr(d) { return d.toISOString().slice(0,10); }
-function parseDate(s) { return new Date(s + 'T00:00:00'); }
+function parseDate(s) { const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d); }
 function todayDate() {
   const n = new Date();
   return new Date(n.getFullYear(), n.getMonth(), n.getDate());
@@ -575,6 +608,50 @@ function render() {
   if (currentView==='week') renderWeek();
   if (currentView==='month') renderMonth();
 }
+
+/* ── BACKUP / RESTORE ── */
+document.getElementById('backup-btn').addEventListener('click', () => {
+  document.getElementById('backup-backdrop').classList.add('open');
+});
+document.getElementById('backup-backdrop').addEventListener('click', e => {
+  if (e.target === e.currentTarget) e.currentTarget.classList.remove('open');
+});
+
+document.getElementById('export-btn').addEventListener('click', () => {
+  const json = JSON.stringify(state, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const today = dateStr(todayDate());
+  a.href = url; a.download = `habits-backup-${today}.json`;
+  a.click(); URL.revokeObjectURL(url);
+  document.getElementById('backup-backdrop').classList.remove('open');
+  showToast('Backup saved ✓');
+});
+
+document.getElementById('import-btn').addEventListener('click', () => {
+  document.getElementById('import-file').click();
+});
+document.getElementById('import-file').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = evt => {
+    try {
+      const parsed = JSON.parse(evt.target.result);
+      if (!parsed.log) throw new Error('Invalid format');
+      state = parsed;
+      save(state);
+      document.getElementById('backup-backdrop').classList.remove('open');
+      render();
+      showToast('Data restored ✓');
+    } catch(err) {
+      showToast('Invalid backup file');
+    }
+    e.target.value = '';
+  };
+  reader.readAsText(file);
+});
 
 /* ── SERVICE WORKER ── */
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
