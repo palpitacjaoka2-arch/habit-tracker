@@ -366,7 +366,7 @@ function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate() + n); retu
 function diffDays(a, b) { return Math.round((a - b) / 86400000); }
 
 /* ── STATE ── */
-const GS_URL = 'https://script.google.com/macros/s/AKfycbwmO5ocXjJlapXtuzuEZEyg-uxFULflHx0D-gbxac65Toy7lhxUBI9C88G2_zAuE7_9CA/exec';
+const GS_URL = 'https://script.google.com/macros/s/AKfycbyQkKNJXuz1PX_45aX1hK_XygitaiY5GDneBh4oOdPmSTgzEKW2qWrjFGIRZSeFLPEaPg/exec';
 
 function loadLocal() {
   try { const r = localStorage.getItem(KEY); if (r) return JSON.parse(r); } catch(e) {}
