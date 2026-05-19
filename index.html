@@ -175,6 +175,58 @@ body { min-height: 100%; background: var(--bg); color: var(--text); font-family:
 .backup-icon { font-size: 20px; width: 28px; text-align: center; }
 .backup-text-title { font-size: 15px; color: var(--text); }
 .backup-text-sub { font-size: 12px; color: var(--text3); margin-top: 2px; }
+
+/* ── REPORT VIEW ── */
+.report-view { padding: 0 20px; }
+.report-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.report-nav-btn { width: 34px; height: 34px; border-radius: 10px; border: 0.5px solid var(--border2); background: transparent; color: var(--text2); font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.report-nav-btn:active { background: var(--bg3); }
+.report-month-title { font-size: 15px; font-weight: 500; color: var(--text); }
+.report-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 24px; }
+.report-stat { background: var(--bg2); border-radius: 12px; padding: 12px; }
+.report-stat-n { font-family: 'DM Mono', monospace; font-size: 20px; font-weight: 500; color: var(--text); }
+.report-stat-n.good { color: var(--green); }
+.report-stat-n.bad { color: #eb5757; }
+.report-stat-n.accent { color: var(--accent); }
+.report-stat-l { font-size: 11px; color: var(--text3); margin-top: 2px; }
+.report-section-title { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text3); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 10px; }
+.report-day-card { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 14px; margin-bottom: 10px; overflow: hidden; }
+.report-day-card.incomplete { border-color: rgba(235,87,87,0.2); }
+.report-day-card.complete { border-color: rgba(111,207,151,0.2); }
+.report-day-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; cursor: pointer; }
+.report-day-left { display: flex; align-items: center; gap: 10px; }
+.report-day-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.report-day-dot.complete { background: var(--green); }
+.report-day-dot.incomplete { background: #eb5757; }
+.report-day-dot.partial { background: var(--accent); }
+.report-day-name { font-size: 14px; font-weight: 500; color: var(--text); }
+.report-day-date { font-size: 11px; color: var(--text3); margin-top: 1px; }
+.report-day-score { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text3); }
+.report-day-score.complete { color: var(--green); }
+.report-day-score.incomplete { color: #eb5757; }
+.report-day-body { border-top: 0.5px solid var(--border); padding: 10px 14px; display: none; }
+.report-day-body.open { display: block; }
+.report-sub-title { font-size: 11px; color: var(--text3); font-family: 'DM Mono', monospace; text-transform: uppercase; letter-spacing: 0.08em; margin: 8px 0 6px; }
+.report-sub-title:first-child { margin-top: 0; }
+.report-act-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 13px; }
+.report-act-icon { font-size: 13px; width: 18px; text-align: center; }
+.report-act-name { color: var(--text2); }
+.report-act-name.done { color: var(--text3); text-decoration: line-through; }
+.report-event-row { display: flex; align-items: flex-start; gap: 8px; padding: 4px 0; }
+.report-event-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); margin-top: 5px; flex-shrink: 0; }
+.report-event-title { font-size: 13px; color: var(--text2); flex: 1; }
+.report-event-time { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text3); white-space: nowrap; }
+.report-empty { text-align: center; padding: 32px 0; color: var(--text3); font-size: 14px; }
+.report-loading { text-align: center; padding: 40px 0; color: var(--text3); font-size: 14px; }
+.report-cal-empty { font-size: 13px; color: var(--text3); font-style: italic; padding: 2px 0; }
+.report-streak-section { margin-bottom: 24px; }
+.streak-timeline { display: flex; flex-wrap: wrap; gap: 4px; }
+.streak-cell { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-family: 'DM Mono', monospace; }
+.streak-cell.sc-complete { background: var(--green-dim); color: var(--green); border: 0.5px solid rgba(111,207,151,0.2); }
+.streak-cell.sc-partial { background: var(--accent-dim); color: var(--accent); border: 0.5px solid rgba(212,184,150,0.2); }
+.streak-cell.sc-miss { background: var(--bg2); color: var(--text3); border: 0.5px solid var(--border); }
+.streak-cell.sc-future { background: transparent; color: var(--text3); border: 0.5px solid var(--border); opacity: 0.3; }
+.streak-cell.sc-rest { background: transparent; color: var(--text3); opacity: 0.2; }
 </style>
 </head>
 <body>
@@ -195,11 +247,13 @@ body { min-height: 100%; background: var(--bg); color: var(--text); font-family:
     <button class="tab active" id="tab-day" onclick="switchView('day')">Day</button>
     <button class="tab" id="tab-week" onclick="switchView('week')">Week</button>
     <button class="tab" id="tab-month" onclick="switchView('month')">Month</button>
+    <button class="tab" id="tab-report" onclick="switchView('report')">Report</button>
   </div>
 
   <div id="view-day" class="day-view"></div>
   <div id="view-week" class="week-view" style="display:none"></div>
   <div id="view-month" class="month-view" style="display:none"></div>
+  <div id="view-report" class="report-view" style="display:none"></div>
 </div>
 
 <!-- Sheet -->
@@ -397,18 +451,21 @@ function calcStreak() {
 
 /* ── CURRENT VIEW ── */
 let currentView = 'day';
-let weekOffset = 0; // 0 = current week
-let monthOffset = 0; // 0 = current month
-let viewingDate = todayDate(); // used for day view when tapped from week/month
+let weekOffset = 0;
+let monthOffset = 0;
+let reportMonthOffset = 0;
+let calendarCache = {}; // cache calendar fetches by 'YYYY-MM'
 
 function switchView(v) {
   currentView = v;
   document.getElementById('tab-day').classList.toggle('active', v==='day');
   document.getElementById('tab-week').classList.toggle('active', v==='week');
   document.getElementById('tab-month').classList.toggle('active', v==='month');
+  document.getElementById('tab-report').classList.toggle('active', v==='report');
   document.getElementById('view-day').style.display = v==='day' ? '' : 'none';
   document.getElementById('view-week').style.display = v==='week' ? '' : 'none';
   document.getElementById('view-month').style.display = v==='month' ? '' : 'none';
+  document.getElementById('view-report').style.display = v==='report' ? '' : 'none';
   render();
 }
 
@@ -641,11 +698,187 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('show'), 2000);
 }
 
+/* ── REPORT VIEW ── */
+async function renderReport() {
+  const today = todayDate();
+  const base = new Date(today.getFullYear(), today.getMonth() + reportMonthOffset, 1);
+  const year = base.getFullYear();
+  const month = base.getMonth(); // 0-indexed
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const cacheKey = `${year}-${String(month+1).padStart(2,'0')}`;
+
+  const el = document.getElementById('view-report');
+
+  // nav + loading state
+  el.innerHTML = `
+    <div class="report-nav">
+      <button class="report-nav-btn" onclick="shiftReport(-1)">‹</button>
+      <div class="report-month-title">${MONTHS[month]} ${year}</div>
+      <button class="report-nav-btn" onclick="shiftReport(1)">›</button>
+    </div>
+    <div class="report-loading">Loading calendar events…</div>
+  `;
+
+  // fetch calendar if not cached
+  if (!calendarCache[cacheKey]) {
+    try {
+      const res = await fetch(`${GS_URL}?action=calendar&month=${month+1}&year=${year}`);
+      const json = await res.json();
+      calendarCache[cacheKey] = json.events || [];
+    } catch(e) {
+      calendarCache[cacheKey] = null; // mark as failed
+    }
+  }
+
+  const calEvents = calendarCache[cacheKey];
+
+  // build calendar map: date -> events[]
+  const calMap = {};
+  if (calEvents) {
+    calEvents.forEach(ev => {
+      if (!calMap[ev.date]) calMap[ev.date] = [];
+      calMap[ev.date].push(ev);
+    });
+  }
+
+  // analyse each day of month
+  let completeDays = 0, incompleteDays = 0, restDays = 0, futureDays = 0;
+  const dayData = [];
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateObj = new Date(year, month, d);
+    const ds = dateStr(dateObj);
+    const isFuture = dateObj > today;
+    const acts = activitiesFor(dateObj);
+    const events = calMap[ds] || [];
+
+    if (!acts.length) { restDays++; dayData.push({ dateObj, ds, type: 'rest', acts, events }); continue; }
+    if (isFuture) { futureDays++; dayData.push({ dateObj, ds, type: 'future', acts, events }); continue; }
+
+    const comp = completionOf(dateObj);
+    const isFull = comp && comp.done === comp.total;
+    const isPartial = comp && comp.done > 0 && !isFull;
+
+    if (isFull) completeDays++;
+    else incompleteDays++;
+
+    dayData.push({ dateObj, ds, type: isFull ? 'complete' : isPartial ? 'partial' : 'miss', comp, acts, events });
+  }
+
+  const activeDays = completeDays + incompleteDays;
+  const completePct = activeDays ? Math.round((completeDays / activeDays) * 100) : 0;
+
+  // streak timeline
+  let timelineHtml = '';
+  dayData.forEach(({ dateObj, type, comp }) => {
+    const label = dateObj.getDate();
+    let cls = 'sc-future';
+    if (type === 'complete') cls = 'sc-complete';
+    else if (type === 'partial') cls = 'sc-partial';
+    else if (type === 'miss') cls = 'sc-miss';
+    else if (type === 'rest') cls = 'sc-rest';
+    timelineHtml += `<div class="streak-cell ${cls}" title="${dateStr(dateObj)}">${label}</div>`;
+  });
+
+  // incomplete/partial days detail
+  const problemDays = dayData.filter(d => d.type === 'miss' || d.type === 'partial');
+
+  let problemHtml = '';
+  if (problemDays.length === 0) {
+    problemHtml = `<div class="report-empty">🎉 Perfect month — all active days completed!</div>`;
+  } else {
+    problemDays.forEach(({ dateObj, ds, type, comp, acts, events }) => {
+      const dow = DOW_FULL[dateObj.getDay()];
+      const dateLabel = dateObj.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+      const scoreLabel = comp ? `${comp.done}/${comp.total}` : `0/${acts.length}`;
+      const dotCls = type === 'partial' ? 'partial' : 'incomplete';
+      const scoreCls = type === 'partial' ? '' : 'incomplete';
+
+      // activities
+      let actsHtml = acts.map(a => {
+        const done = !!(state.log[ds] && state.log[ds][a.name]);
+        return `<div class="report-act-row">
+          <div class="report-act-icon">${a.icon}</div>
+          <div class="report-act-name ${done ? 'done' : ''}">${a.name}</div>
+        </div>`;
+      }).join('');
+
+      // calendar events
+      let eventsHtml = '';
+      if (calEvents === null) {
+        eventsHtml = `<div class="report-cal-empty">Could not load calendar</div>`;
+      } else if (events.length === 0) {
+        eventsHtml = `<div class="report-cal-empty">No events found</div>`;
+      } else {
+        eventsHtml = events.map(ev => `
+          <div class="report-event-row">
+            <div class="report-event-dot"></div>
+            <div class="report-event-title">${ev.title}</div>
+            <div class="report-event-time">${ev.allDay ? 'all day' : ev.start + '–' + ev.end}</div>
+          </div>`).join('');
+      }
+
+      problemHtml += `
+        <div class="report-day-card ${type === 'partial' ? '' : 'incomplete'}">
+          <div class="report-day-head" onclick="this.nextElementSibling.classList.toggle('open')">
+            <div class="report-day-left">
+              <div class="report-day-dot ${dotCls}"></div>
+              <div>
+                <div class="report-day-name">${dow}, ${dateLabel}</div>
+                <div class="report-day-date">${type === 'partial' ? 'Partial' : 'Missed'}</div>
+              </div>
+            </div>
+            <div class="report-day-score ${scoreCls}">${scoreLabel}</div>
+          </div>
+          <div class="report-day-body">
+            <div class="report-sub-title">Activities</div>
+            ${actsHtml}
+            <div class="report-sub-title" style="margin-top:12px;">Calendar that day</div>
+            ${eventsHtml}
+          </div>
+        </div>`;
+    });
+  }
+
+  el.innerHTML = `
+    <div class="report-nav">
+      <button class="report-nav-btn" onclick="shiftReport(-1)">‹</button>
+      <div class="report-month-title">${MONTHS[month]} ${year}</div>
+      <button class="report-nav-btn" onclick="shiftReport(1)">›</button>
+    </div>
+
+    <div class="report-summary">
+      <div class="report-stat"><div class="report-stat-n good">${completeDays}</div><div class="report-stat-l">full days</div></div>
+      <div class="report-stat"><div class="report-stat-n bad">${incompleteDays}</div><div class="report-stat-l">missed days</div></div>
+      <div class="report-stat"><div class="report-stat-n accent">${completePct}%</div><div class="report-stat-l">completion</div></div>
+    </div>
+
+    <div class="report-streak-section">
+      <div class="report-section-title" style="margin-bottom:10px;">Month overview</div>
+      <div class="streak-timeline">${timelineHtml}</div>
+      <div style="display:flex;gap:12px;margin-top:10px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3);"><div style="width:8px;height:8px;border-radius:50%;background:var(--green)"></div> Complete</div>
+        <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3);"><div style="width:8px;height:8px;border-radius:50%;background:var(--accent)"></div> Partial</div>
+        <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3);"><div style="width:8px;height:8px;border-radius:50%;background:var(--bg3);border:0.5px solid var(--border2)"></div> Missed</div>
+      </div>
+    </div>
+
+    <div class="report-section-title">Incomplete days + calendar</div>
+    ${problemHtml}
+  `;
+}
+
+function shiftReport(dir) {
+  reportMonthOffset += dir;
+  renderReport();
+}
+
 /* ── RENDER ── */
 function render() {
   if (currentView==='day') renderDay(todayDate());
   if (currentView==='week') renderWeek();
   if (currentView==='month') renderMonth();
+  if (currentView==='report') renderReport();
 }
 
 /* ── BACKUP / RESTORE ── */
