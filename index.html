@@ -399,6 +399,8 @@ async function syncToSheets(s) {
   try {
     await fetch(GS_URL, {
       method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify({ data: JSON.stringify(s) }),
     });
   } catch(e) {
@@ -892,8 +894,17 @@ document.getElementById('backup-backdrop').addEventListener('click', e => {
 document.getElementById('export-btn').addEventListener('click', async () => {
   document.getElementById('backup-backdrop').classList.remove('open');
   showToast('Saving to Google Sheets…');
-  await syncToSheets(state);
-  showToast('Saved to Google Sheets ✓');
+  try {
+    await fetch(GS_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ data: JSON.stringify(state) }),
+    });
+    showToast('Saved to Google Sheets ✓');
+  } catch(e) {
+    showToast('Save failed — check connection');
+  }
 });
 
 document.getElementById('import-btn').addEventListener('click', async () => {
