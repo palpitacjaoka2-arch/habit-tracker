@@ -397,12 +397,8 @@ async function syncFromSheets() {
 async function syncToSheets(s) {
   saveLocal(s);
   try {
-    await fetch(GS_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ data: JSON.stringify(s) }),
-    });
+    const encoded = encodeURIComponent(JSON.stringify(s));
+    await fetch(`${GS_URL}?action=save&data=${encoded}`, { mode: 'no-cors' });
   } catch(e) {
     // silent fail — data is safe in localStorage
   }
@@ -895,12 +891,8 @@ document.getElementById('export-btn').addEventListener('click', async () => {
   document.getElementById('backup-backdrop').classList.remove('open');
   showToast('Saving to Google Sheets…');
   try {
-    await fetch(GS_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ data: JSON.stringify(state) }),
-    });
+    const encoded = encodeURIComponent(JSON.stringify(state));
+    await fetch(`${GS_URL}?action=save&data=${encoded}`, { mode: 'no-cors' });
     showToast('Saved to Google Sheets ✓');
   } catch(e) {
     showToast('Save failed — check connection');
