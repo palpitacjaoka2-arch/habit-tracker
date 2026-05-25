@@ -854,7 +854,10 @@ async function renderReport() {
         eventsHtml = events.map(ev => `
           <div class="report-event-row">
             <div class="report-event-dot"></div>
-            <div class="report-event-title">${ev.title}</div>
+            <div style="flex:1;">
+              <div class="report-event-title">${ev.title}</div>
+              ${ev.calendar ? `<div style="font-size:11px;color:var(--text3);margin-top:1px;">${ev.calendar}</div>` : ''}
+            </div>
             <div class="report-event-time">${ev.allDay ? 'all day' : ev.start + '–' + ev.end}</div>
           </div>`).join('');
       }
@@ -911,6 +914,7 @@ async function renderReport() {
 
 function shiftReport(dir) {
   reportMonthOffset += dir;
+  calendarCache = {}; // clear cache on navigation
   renderReport();
 }
 
@@ -919,7 +923,7 @@ function render() {
   if (currentView==='day') renderDay(todayDate());
   if (currentView==='week') renderWeek();
   if (currentView==='month') renderMonth();
-  if (currentView==='report') renderReport();
+  if (currentView==='report') { calendarCache = {}; renderReport(); }
 }
 
 /* ── BACKUP / RESTORE ── */
