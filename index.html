@@ -175,6 +175,17 @@ body { min-height: 100%; background: var(--bg); color: var(--text); font-family:
 .backup-icon { font-size: 20px; width: 28px; text-align: center; }
 .backup-text-title { font-size: 15px; color: var(--text); }
 .backup-text-sub { font-size: 12px; color: var(--text3); margin-top: 2px; }
+.schedule-day-row { display: flex; align-items: center; gap: 12px; padding: 13px 20px; border-top: 0.5px solid var(--border); cursor: pointer; }
+.schedule-day-row:active { background: var(--bg3); }
+.schedule-day-name { flex: 1; font-size: 15px; color: var(--text); }
+.schedule-day-count { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text3); }
+.schedule-day-arrow { font-size: 16px; color: var(--text3); }
+.schedule-act-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 0.5px solid var(--border); }
+.schedule-act-icon-input { width: 36px; height: 36px; border-radius: 8px; background: var(--bg3); border: 0.5px solid var(--border2); font-size: 18px; text-align: center; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.schedule-act-name { flex: 1; font-size: 14px; color: var(--text); }
+.schedule-act-del { font-size: 22px; color: var(--text3); cursor: pointer; padding: 0 4px; flex-shrink: 0; }
+.schedule-act-del:active { color: #eb5757; }
+.schedule-back-btn { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--accent); cursor: pointer; padding: 4px 0 12px; }
 
 /* ── REPORT VIEW ── */
 .report-view { padding: 0 20px; }
@@ -295,6 +306,36 @@ body { min-height: 100%; background: var(--bg); color: var(--text); font-family:
         <div class="backup-text-sub">Pull your data back from the cloud</div>
       </div>
     </div>
+    <div class="backup-row" id="edit-schedule-btn">
+      <div class="backup-icon">✏️</div>
+      <div>
+        <div class="backup-text-title">Edit weekly schedule</div>
+        <div class="backup-text-sub">Change activities per day of the week</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit schedule sheet -->
+<div class="sheet-backdrop" id="schedule-backdrop">
+  <div class="sheet" style="max-height:92vh;">
+    <div class="sheet-handle"></div>
+    <div class="sheet-head">
+      <div>
+        <div class="sheet-title" id="schedule-sheet-title">Edit Schedule</div>
+        <div class="sheet-sub" id="schedule-sheet-sub"></div>
+      </div>
+      <div class="sheet-close" onclick="closeScheduleSheet()">×</div>
+    </div>
+    <div id="schedule-day-list" style="padding:8px 12px 0;"></div>
+    <div id="schedule-edit-day" style="padding:8px 12px; display:none;">
+      <div id="schedule-act-list" style="margin-bottom:12px;"></div>
+      <div style="display:flex;gap:8px;padding:8px 0 16px;">
+        <input type="text" id="schedule-new-input" placeholder="New activity name…" maxlength="50"
+          style="flex:1;font-size:14px;background:var(--bg3);border:0.5px solid var(--border2);border-radius:10px;padding:0 12px;height:40px;color:var(--text);outline:none;font-family:'DM Sans',sans-serif;" />
+        <button id="schedule-add-btn" style="height:40px;padding:0 14px;border-radius:10px;background:var(--accent);border:none;color:var(--bg);font-size:20px;cursor:pointer;">+</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -302,7 +343,7 @@ body { min-height: 100%; background: var(--bg); color: var(--text); font-family:
 const KEY = 'habits_v4';
 
 /* ── SCHEDULE: 0=Sun,1=Mon,...,6=Sat ── */
-const SCHEDULE = {
+const DEFAULT_SCHEDULE = {
   1: [ // Monday
     { icon: '📖', name: 'Reading on the balcony' },
     { icon: '🏃', name: 'Treadmill 1h' },
@@ -370,7 +411,7 @@ const GS_URL = 'https://script.google.com/macros/s/AKfycbyQkKNJXuz1PX_45aX1hK_Xy
 
 function loadLocal() {
   try { const r = localStorage.getItem(KEY); if (r) return JSON.parse(r); } catch(e) {}
-  return { log: {} };
+  return { log: {}, schedule: DEFAULT_SCHEDULE };
 }
 function saveLocal(s) {
   try { localStorage.setItem(KEY, JSON.stringify(s)); } catch(e) {}
@@ -383,6 +424,7 @@ async function syncFromSheets() {
     if (json.data) {
       const remote = JSON.parse(json.data);
       if (remote && remote.log) {
+        if (!remote.schedule) remote.schedule = JSON.parse(JSON.stringify(DEFAULT_SCHEDULE));
         state = remote;
         saveLocal(state);
         render();
@@ -408,7 +450,8 @@ function save(s) { syncToSheets(s); }
 let state = loadLocal();
 
 function activitiesFor(dateObj) {
-  return SCHEDULE[dateObj.getDay()] || [];
+  const schedule = (state && state.schedule) ? state.schedule : DEFAULT_SCHEDULE;
+  return schedule[dateObj.getDay()] || [];
 }
 
 function isComplete(dateObj) {
@@ -904,6 +947,138 @@ document.getElementById('import-btn').addEventListener('click', async () => {
   showToast('Loading from Google Sheets…');
   await syncFromSheets();
 });
+
+/* ── EDIT SCHEDULE ── */
+let editingDay = null;
+
+document.getElementById('edit-schedule-btn').addEventListener('click', () => {
+  document.getElementById('backup-backdrop').classList.remove('open');
+  openScheduleSheet();
+});
+
+function openScheduleSheet() {
+  editingDay = null;
+  document.getElementById('schedule-sheet-title').textContent = 'Edit Schedule';
+  document.getElementById('schedule-sheet-sub').textContent = 'Tap a day to edit its activities';
+  document.getElementById('schedule-edit-day').style.display = 'none';
+  renderScheduleDayList();
+  document.getElementById('schedule-backdrop').classList.add('open');
+}
+
+function closeScheduleSheet() {
+  document.getElementById('schedule-backdrop').classList.remove('open');
+}
+
+document.getElementById('schedule-backdrop').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeScheduleSheet();
+});
+
+function renderScheduleDayList() {
+  const list = document.getElementById('schedule-day-list');
+  // Mon first: 1,2,3,4,5,6,0
+  const order = [1,2,3,4,5,6,0];
+  list.innerHTML = order.map(dow => {
+    const acts = (state.schedule && state.schedule[dow]) ? state.schedule[dow] : [];
+    return `<div class="schedule-day-row" data-dow="${dow}">
+      <div class="schedule-day-name">${DOW_FULL[dow]}</div>
+      <div class="schedule-day-count">${acts.length} activit${acts.length===1?'y':'ies'}</div>
+      <div class="schedule-day-arrow">›</div>
+    </div>`;
+  }).join('');
+  list.querySelectorAll('.schedule-day-row').forEach(row => {
+    row.addEventListener('click', () => openDayEditor(parseInt(row.dataset.dow)));
+  });
+}
+
+function openDayEditor(dow) {
+  editingDay = dow;
+  document.getElementById('schedule-sheet-title').textContent = DOW_FULL[dow];
+  document.getElementById('schedule-sheet-sub').textContent = 'Add or remove activities';
+  document.getElementById('schedule-day-list').innerHTML = '';
+  const editDiv = document.getElementById('schedule-edit-day');
+  editDiv.style.display = 'block';
+
+  // back button
+  const backHtml = `<div class="schedule-back-btn" id="schedule-back-btn">‹ All days</div>`;
+  renderDayActivities(dow, backHtml);
+
+  document.getElementById('schedule-new-input').value = '';
+}
+
+function renderDayActivities(dow, backHtml = '') {
+  if (!state.schedule) state.schedule = JSON.parse(JSON.stringify(DEFAULT_SCHEDULE));
+  const acts = state.schedule[dow] || [];
+  const container = document.getElementById('schedule-act-list');
+
+  container.innerHTML = (backHtml ? `<div style="padding:4px 0 8px;">${backHtml}</div>` : '') +
+    (acts.length === 0 ? '<div style="font-size:13px;color:var(--text3);padding:8px 0;">No activities — add one below.</div>' : '') +
+    acts.map((a, i) => `
+      <div class="schedule-act-item">
+        <div class="schedule-act-icon-input" data-idx="${i}" title="Tap to change emoji">${a.icon}</div>
+        <div class="schedule-act-name">${a.name}</div>
+        <div class="schedule-act-del" data-idx="${i}">×</div>
+      </div>`).join('');
+
+  // back button
+  const backBtn = document.getElementById('schedule-back-btn');
+  if (backBtn) backBtn.addEventListener('click', () => {
+    editingDay = null;
+    document.getElementById('schedule-edit-day').style.display = 'none';
+    document.getElementById('schedule-sheet-title').textContent = 'Edit Schedule';
+    document.getElementById('schedule-sheet-sub').textContent = 'Tap a day to edit its activities';
+    renderScheduleDayList();
+  });
+
+  // delete buttons
+  container.querySelectorAll('.schedule-act-del').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = parseInt(btn.dataset.idx);
+      state.schedule[dow].splice(idx, 1);
+      save(state);
+      render();
+      renderDayActivities(dow);
+    });
+  });
+
+  // emoji picker on icon tap
+  container.querySelectorAll('.schedule-act-icon-input').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = parseInt(btn.dataset.idx);
+      const emojis = ['📖','🏃','🚶','🧘','🤖','🏋️','💧','🧠','✏️','🌙','🎯','🥗','🛁','📵','🎨','🎸','🧹','💼','🏊','🚴'];
+      const current = state.schedule[dow][idx].icon;
+      const next = emojis[(emojis.indexOf(current) + 1) % emojis.length];
+      state.schedule[dow][idx].icon = next;
+      save(state);
+      render();
+      renderDayActivities(dow);
+    });
+  });
+}
+
+document.getElementById('schedule-add-btn').addEventListener('click', addScheduleActivity);
+document.getElementById('schedule-new-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { addScheduleActivity(); e.target.blur(); }
+});
+
+function addScheduleActivity() {
+  const inp = document.getElementById('schedule-new-input');
+  const val = inp.value.trim();
+  if (!val || editingDay === null) return;
+  if (!state.schedule) state.schedule = JSON.parse(JSON.stringify(DEFAULT_SCHEDULE));
+  if (!state.schedule[editingDay]) state.schedule[editingDay] = [];
+  // check duplicate
+  if (state.schedule[editingDay].find(a => a.name === val)) {
+    showToast('Already in this day');
+    inp.value = '';
+    return;
+  }
+  state.schedule[editingDay].push({ icon: '🎯', name: val });
+  save(state);
+  render();
+  inp.value = '';
+  renderDayActivities(editingDay);
+  showToast('Activity added');
+}
 
 /* ── SERVICE WORKER ── */
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
