@@ -203,6 +203,11 @@ body { min-height: 100%; background: var(--bg); color: var(--text); font-family:
 .schedule-act-del { font-size: 22px; color: var(--text3); cursor: pointer; padding: 0 4px; flex-shrink: 0; }
 .schedule-act-del:active { color: #eb5757; }
 .schedule-back-btn { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--accent); cursor: pointer; padding: 4px 0 12px; }
+.apply-option { display: flex; align-items: center; gap: 14px; padding: 14px 8px; border-top: 0.5px solid var(--border); cursor: pointer; border-radius: 10px; transition: background 0.15s; }
+.apply-option:active { background: var(--bg3); }
+.apply-option-icon { font-size: 20px; width: 28px; text-align: center; flex-shrink: 0; }
+.apply-option-title { font-size: 15px; color: var(--text); }
+.apply-option-sub { font-size: 12px; color: var(--text3); margin-top: 2px; }
 
 /* ── REPORT VIEW ── */
 .report-view { padding: 0 20px; }
@@ -356,6 +361,21 @@ body { min-height: 100%; background: var(--bg); color: var(--text); font-family:
         <button id="schedule-add-btn" style="height:40px;padding:0 14px;border-radius:10px;background:var(--accent);border:none;color:var(--bg);font-size:20px;cursor:pointer;">+</button>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- Apply-to picker sheet -->
+<div class="sheet-backdrop" id="apply-backdrop">
+  <div class="sheet" style="max-height:60vh;">
+    <div class="sheet-handle"></div>
+    <div style="padding:16px 20px 8px; display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <div style="font-size:16px; font-weight:500; color:var(--text);" id="apply-title">Add activity</div>
+        <div style="font-size:12px; color:var(--text3); margin-top:2px;">Apply to which days?</div>
+      </div>
+      <div style="font-size:22px;color:var(--text3);cursor:pointer;" onclick="document.getElementById('apply-backdrop').classList.remove('open')">×</div>
+    </div>
+    <div id="apply-options" style="padding:4px 12px 20px;"></div>
   </div>
 </div>
 
@@ -1190,24 +1210,81 @@ document.getElementById('schedule-new-input').addEventListener('keydown', e => {
   if (e.key === 'Enter') { addScheduleActivity(); e.target.blur(); }
 });
 
+let pendingActivityName = null;
+
 function addScheduleActivity() {
   const inp = document.getElementById('schedule-new-input');
   const val = inp.value.trim();
   if (!val || editingDay === null) return;
   if (!state.schedule) state.schedule = JSON.parse(JSON.stringify(DEFAULT_SCHEDULE));
   if (!state.schedule[editingDay]) state.schedule[editingDay] = [];
-  // check duplicate
   if (state.schedule[editingDay].find(a => a.name === val)) {
     showToast('Already in this day');
     inp.value = '';
     return;
   }
-  state.schedule[editingDay].push({ icon: '🎯', name: val });
+  // show apply-to picker
+  pendingActivityName = val;
+  inp.value = '';
+  showApplyPicker(val);
+}
+
+function showApplyPicker(actName) {
+  const dow = editingDay;
+  const dowName = DOW_FULL[dow]; // e.g. "Monday"
+  document.getElementById('apply-title').textContent = '"' + actName + '"';
+
+  // build all-days option list
+  const order = [1,2,3,4,5,6,0];
+  const dayCheckboxes = order.map(d => `
+    <label style="display:flex;align-items:center;gap:10px;padding:6px 0;cursor:pointer;">
+      <input type="checkbox" data-dow="${d}" ${d === dow ? 'checked' : ''} style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer;"/>
+      <span style="font-size:14px;color:var(--text);">${DOW_FULL[d]}</span>
+    </label>`).join('');
+
+  document.getElementById('apply-options').innerHTML = `
+    <div class="apply-option" id="apply-this-day">
+      <div class="apply-option-icon">📅</div>
+      <div>
+        <div class="apply-option-title">Only this ${dowName}</div>
+        <div class="apply-option-sub">Add to ${dowName}s in the weekly schedule</div>
+      </div>
+    </div>
+    <div style="border-top:0.5px solid var(--border);padding:14px 8px 4px;">
+      <div style="font-size:11px;font-family:'DM Mono',monospace;color:var(--text3);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:10px;">Or choose specific days</div>
+      ${dayCheckboxes}
+      <button id="apply-custom-btn" style="width:100%;margin-top:12px;padding:12px;border-radius:12px;background:var(--accent);border:none;color:var(--bg);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;">Add to selected days</button>
+    </div>
+  `;
+
+  document.getElementById('apply-this-day').addEventListener('click', () => {
+    applyActivity([dow]);
+  });
+  document.getElementById('apply-custom-btn').addEventListener('click', () => {
+    const checked = [...document.querySelectorAll('#apply-options input[type=checkbox]:checked')].map(el => parseInt(el.dataset.dow));
+    if (!checked.length) { showToast('Select at least one day'); return; }
+    applyActivity(checked);
+  });
+
+  document.getElementById('apply-backdrop').classList.add('open');
+}
+
+function applyActivity(days) {
+  if (!state.schedule) state.schedule = JSON.parse(JSON.stringify(DEFAULT_SCHEDULE));
+  const name = pendingActivityName;
+  days.forEach(d => {
+    if (!state.schedule[d]) state.schedule[d] = [];
+    if (!state.schedule[d].find(a => a.name === name)) {
+      state.schedule[d].push({ icon: '🎯', name });
+    }
+  });
   save(state);
   render();
-  inp.value = '';
+  document.getElementById('apply-backdrop').classList.remove('open');
   renderDayActivities(editingDay);
-  showToast('Activity added');
+  const label = days.length === 1 ? DOW_FULL[days[0]] : days.length + ' days';
+  showToast('Added to ' + label + ' ✓');
+  pendingActivityName = null;
 }
 
 /* ── SERVICE WORKER ── */
