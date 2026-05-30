@@ -258,13 +258,11 @@ body { min-height: 100%; background: var(--bg); color: var(--text); font-family:
     <button class="tab active" id="tab-day" onclick="switchView('day')">Day</button>
     <button class="tab" id="tab-week" onclick="switchView('week')">Week</button>
     <button class="tab" id="tab-month" onclick="switchView('month')">Month</button>
-    <button class="tab" id="tab-report" onclick="switchView('report')">Report</button>
   </div>
 
   <div id="view-day" class="day-view"></div>
   <div id="view-week" class="week-view" style="display:none"></div>
   <div id="view-month" class="month-view" style="display:none"></div>
-  <div id="view-report" class="report-view" style="display:none"></div>
 </div>
 
 <!-- Sheet -->
@@ -515,11 +513,9 @@ function switchView(v) {
   document.getElementById('tab-day').classList.toggle('active', v==='day');
   document.getElementById('tab-week').classList.toggle('active', v==='week');
   document.getElementById('tab-month').classList.toggle('active', v==='month');
-  document.getElementById('tab-report').classList.toggle('active', v==='report');
   document.getElementById('view-day').style.display = v==='day' ? '' : 'none';
   document.getElementById('view-week').style.display = v==='week' ? '' : 'none';
   document.getElementById('view-month').style.display = v==='month' ? '' : 'none';
-  document.getElementById('view-report').style.display = v==='report' ? '' : 'none';
   render();
 }
 
@@ -936,7 +932,6 @@ function render() {
   if (currentView==='day') renderDay(todayDate());
   if (currentView==='week') renderWeek();
   if (currentView==='month') renderMonth();
-  if (currentView==='report') { calendarCache = {}; renderReport(); }
 }
 
 /* ── BACKUP / RESTORE ── */
