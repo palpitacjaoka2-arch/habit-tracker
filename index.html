@@ -295,14 +295,14 @@ body { min-height: 100%; background: var(--bg); color: var(--text); font-family:
     <div class="backup-row" id="export-btn">
       <div class="backup-icon">☁️</div>
       <div>
-        <div class="backup-text-title">Save to Google Sheets</div>
+        <div class="backup-text-title">Save to Supabase</div>
         <div class="backup-text-sub">Push your current data to the cloud</div>
       </div>
     </div>
     <div class="backup-row" id="import-btn">
       <div class="backup-icon">🔄</div>
       <div>
-        <div class="backup-text-title">Restore from Google Sheets</div>
+        <div class="backup-text-title">Restore from Supabase</div>
         <div class="backup-text-sub">Pull your data back from the cloud</div>
       </div>
     </div>
@@ -407,6 +407,8 @@ function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate() + n); retu
 function diffDays(a, b) { return Math.round((a - b) / 86400000); }
 
 /* ── STATE ── */
+const SUPABASE_URL = 'https://oujragwjfcmyziukzpze.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_cPd1yu4gwlZa1xVDfhE7KA_NktgwLD9';
 const GS_URL = 'https://script.google.com/macros/s/AKfycbyQkKNJXuz1PX_45aX1hK_XygitaiY5GDneBh4oOdPmSTgzEKW2qWrjFGIRZSeFLPEaPg/exec';
 
 function loadLocal() {
@@ -417,36 +419,47 @@ function saveLocal(s) {
   try { localStorage.setItem(KEY, JSON.stringify(s)); } catch(e) {}
 }
 
-async function syncFromSheets() {
+async function syncFromSupabase() {
   try {
-    const res = await fetch(GS_URL);
-    const json = await res.json();
-    if (json.data) {
-      const remote = JSON.parse(json.data);
-      if (remote && remote.log) {
-        if (!remote.schedule) remote.schedule = JSON.parse(JSON.stringify(DEFAULT_SCHEDULE));
-        state = remote;
-        saveLocal(state);
-        render();
-        showToast('Synced from Google Sheets ✓');
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/habit_data?id=eq.main&select=data`, {
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
       }
+    });
+    const rows = await res.json();
+    if (rows && rows[0] && rows[0].data && rows[0].data.log) {
+      const remote = rows[0].data;
+      if (!remote.schedule) remote.schedule = JSON.parse(JSON.stringify(DEFAULT_SCHEDULE));
+      state = remote;
+      saveLocal(state);
+      render();
+      showToast('Synced ✓');
     }
   } catch(e) {
     showToast('Offline — using local data');
   }
 }
 
-async function syncToSheets(s) {
+async function syncToSupabase(s) {
   saveLocal(s);
   try {
-    const encoded = encodeURIComponent(JSON.stringify(s));
-    await fetch(`${GS_URL}?action=save&data=${encoded}`, { mode: 'no-cors' });
+    await fetch(`${SUPABASE_URL}/rest/v1/habit_data?id=eq.main`, {
+      method: 'PATCH',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal',
+      },
+      body: JSON.stringify({ data: s, updated_at: new Date().toISOString() }),
+    });
   } catch(e) {
-    // silent fail — data is safe in localStorage
+    // silent fail — data safe in localStorage
   }
 }
 
-function save(s) { syncToSheets(s); }
+function save(s) { syncToSupabase(s); }
 let state = loadLocal();
 
 function activitiesFor(dateObj) {
@@ -936,11 +949,10 @@ document.getElementById('backup-backdrop').addEventListener('click', e => {
 
 document.getElementById('export-btn').addEventListener('click', async () => {
   document.getElementById('backup-backdrop').classList.remove('open');
-  showToast('Saving to Google Sheets…');
+  showToast('Saving to Supabase…');
   try {
-    const encoded = encodeURIComponent(JSON.stringify(state));
-    await fetch(`${GS_URL}?action=save&data=${encoded}`, { mode: 'no-cors' });
-    showToast('Saved to Google Sheets ✓');
+    await syncToSupabase(state);
+    showToast('Saved ✓');
   } catch(e) {
     showToast('Save failed — check connection');
   }
@@ -948,8 +960,8 @@ document.getElementById('export-btn').addEventListener('click', async () => {
 
 document.getElementById('import-btn').addEventListener('click', async () => {
   document.getElementById('backup-backdrop').classList.remove('open');
-  showToast('Loading from Google Sheets…');
-  await syncFromSheets();
+  showToast('Loading from Supabase…');
+  await syncFromSupabase();
 });
 
 /* ── EDIT SCHEDULE ── */
@@ -1088,7 +1100,7 @@ function addScheduleActivity() {
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
 
 render();
-syncFromSheets(); // pull latest from Google Sheets on every load
+syncFromSupabase();
 </script>
 </body>
 </html>
