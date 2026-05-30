@@ -1,4 +1,4 @@
-const CACHE = 'habits-v17';
+const CACHE = 'habits-v18';
 const ASSETS = ['./', './index.html', './manifest.json'];
 
 self.addEventListener('install', e => {
